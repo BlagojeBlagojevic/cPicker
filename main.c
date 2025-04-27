@@ -77,18 +77,18 @@ u32 get_pixel_color(POINT* cursor) {
 
 
 bool IsAKeyPressedOnce() {
-	static bool prevAState = false; // Stores the previous state of the 'A' key
+	static bool prevAState = false;  //SAVE BUFFER a
 
-	// Get the current state of the 'A' key (high-order bit indicates down)
+
 	bool currentAState = ((GetAsyncKeyState('A') & 0x8000) != 0) & ((GetAsyncKeyState(' ') & 0x8000) != 0);
 	Sleep(1);
-	// Trigger action only if the key was NOT pressed before but IS pressed now
+	
 	if (currentAState && !prevAState) {
-		prevAState = currentAState; // Update previous state
+		prevAState = currentAState; 
 		return true;
 		}
 
-	prevAState = currentAState; // Update previous state for next call
+	prevAState = currentAState; 
 	return false;
 	}
 
@@ -194,13 +194,16 @@ int main(int argc, char *argv[]) {
 			SDL_ERR(SDL_RenderClear(r));
 			char msg[128];
 			snprintf(msg, 128, "r: %u, g: %u b: %u", GetRValue(rgb), GetGValue(rgb), GetBValue(rgb));
-			Text_Renderer_C(r, f, 10, 10, 200, 50, msg, WHITE);
+			SDL_Color color = { 255 - GetRValue(rgb), 255 -  GetGValue(rgb), 255 -  GetBValue(rgb), 0};
+			Text_Renderer_C(r, f, 10, 10, 200, 50, msg, color);
 			Sleep(3);
+			SDL_SetWindowPosition(w, cursor.x + 10, cursor.y + 10);
+			Sleep(1);
 			static SDL_Event event;
 			if(SDL_PollEvent(&event)) {
 				//Sleep(1);
 				}
-			SDL_SetRenderDrawColor(r, 20, 20, 20, 255);
+			SDL_SetRenderDrawColor(r, GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), 255);
 			SDL_RenderPresent(r);
 			}
 
