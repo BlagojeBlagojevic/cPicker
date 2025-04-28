@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include<math.h>
 #include<SDL2/SDL_hints.h>
 #include<SDL2/SDL_error.h>
 #include<SDL2/SDL_log.h>
@@ -55,6 +56,15 @@ typedef  float    f32;
 typedef  double   f64;
 
 
+
+#define WIDTH  250
+#define HEIGHT 70
+
+static SDL_Renderer *r;
+static SDL_Window   *w;
+static TTF_Font* f;
+
+
 static void disp_colorref(COLORREF rgb) {
 	printf("rgb = %lu, r: %u, g: %u b: %u\n", rgb, GetRValue(rgb), GetGValue(rgb), GetBValue(rgb));
 	}
@@ -82,13 +92,13 @@ bool IsAKeyPressedOnce() {
 
 	bool currentAState = ((GetAsyncKeyState('A') & 0x8000) != 0) & ((GetAsyncKeyState(' ') & 0x8000) != 0);
 	Sleep(1);
-	
+
 	if (currentAState && !prevAState) {
-		prevAState = currentAState; 
+		prevAState = currentAState;
 		return true;
 		}
 
-	prevAState = currentAState; 
+	prevAState = currentAState;
 	return false;
 	}
 
@@ -125,12 +135,160 @@ void Text_Renderer_C(SDL_Renderer *renderer, TTF_Font *font, i32 startX, i32 sta
 	SDL_DestroyTexture(textTexture);
 	}
 
+void filled_circle_quarter(SDL_Renderer *renderer, int x_center, int y_center, int radius, int quadrant) {
+    for (int dy = 0; dy <= radius; dy++) {
+        f64 y;
+        switch (quadrant) {
+            case 0: y = y_center - dy; break; // Top-left
+            case 1: y = y_center - dy; break; // Top-right
+            case 2: y = y_center + dy - 1.1; break; // Bottom-left
+            case 3: y = y_center + dy - 1.1; break; // Bottom-right
+            default: return;
+        }
+
+        f64 dx = sqrt(radius * radius - dy * dy);
+        f64 x_start, x_end;
+
+        switch (quadrant) {
+            case 0: // Top-left
+                x_start = (x_center - dx + 1);
+                x_end = x_center;
+                break;
+            case 1: // Top-right
+                x_start = x_center;
+                x_end = (x_center + dx - 1);
+                break;
+            case 2: // Bottom-left
+                x_start = (x_center - dx + 1.2);
+                x_end = x_center;
+                break;
+            case 3: // Bottom-right
+                x_start = x_center;
+                x_end = (x_center + dx - 1.2);
+                break;
+        }
+
+        SDL_RenderDrawLineF(renderer, x_start, y, x_end, y);
+    }
+    
+    
+}
+
+void draw_rounded_rect(SDL_Renderer *renderer, int x, int y, int width, int height, int radius) {
+    // Main center rectangle
+    SDL_FRect main_rect = {x + radius, y + radius, width - 2 * radius, height - 2 * radius};
+    SDL_RenderFillRectF(renderer, &main_rect);
+
+    // Side rectangles
+    SDL_FRect top_rect = {x + radius, y, width - 2 * radius, radius};
+    SDL_FRect bottom_rect = {x + radius, y + height - radius, width - 2 * radius, radius};
+    SDL_FRect left_rect = {x, y + radius, radius, height - 2 * radius};
+    SDL_FRect right_rect = {x + width - radius, y + radius, radius, height - 2 * radius};
+
+    SDL_RenderFillRectF(renderer, &top_rect);
+    SDL_RenderFillRectF(renderer, &bottom_rect);
+    SDL_RenderFillRectF(renderer, &left_rect);
+    SDL_RenderFillRectF(renderer, &right_rect);
+
+    // Quarter circles for each corner
+    filled_circle_quarter(renderer, x + radius, y + radius, radius, 0); // Top-left
+    filled_circle_quarter(renderer, x + width - radius, y + radius, radius, 1); // Top-right
+    filled_circle_quarter(renderer, x + radius, y + height - radius, radius, 2); // Bottom-left
+    filled_circle_quarter(renderer, x + width - radius, y + height - radius, radius, 3); // Bottom-right
+}
 
 
 
-#define WIDTH  250
-#define HEIGHT 70
 
+void init_window_round(POINT cursor) {
+
+	w   = SDL_CreateShapedWindow("stagod", cursor.x, cursor.y, WIDTH, HEIGHT,  SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALWAYS_ON_TOP  );
+	(void)P_SDL_ERR(w);
+
+	SDL_Surface* shapeSurface = SDL_CreateRGBSurfaceWithFormat(
+	                              0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA8888
+	                            );
+
+	// Draw circle on the shape surface
+	int centerX = 25;
+	int centerY = HEIGHT/2;
+	int radius = HEIGHT/2;
+
+	SDL_LockSurface(shapeSurface);
+	//FIRST HALFS
+	Uint32* pixels = (Uint32*)shapeSurface->pixels;
+	for (int y = 0; y < HEIGHT; ++y) {
+		for (int x = 0; x < 20; ++x) {
+				{
+				int dx = x - centerX, dy = y - centerY;
+				if (dx*dx + dy*dy <= radius*radius) {
+					pixels[y * WIDTH + x] = SDL_MapRGBA(shapeSurface->format, 0, 0, 0, 255);
+					}
+				else {
+					pixels[y * WIDTH + x] = SDL_MapRGBA(shapeSurface->format, 0, 0, 0, 0);
+					}
+				}
+			}
+		}
+	for (int y = 0; y < HEIGHT; ++y) {
+		for (int x = 20; x < WIDTH - 20; ++x) {
+			pixels[y * WIDTH + x] = SDL_MapRGBA(shapeSurface->format, 0, 0, 0, 255);
+			}
+		}
+	centerX = WIDTH - 25;
+	for (int y = 0; y < HEIGHT; ++y) {
+		for (int x = WIDTH - 20; x < WIDTH; ++x) {
+				{
+				int dx = x - centerX, dy = y - centerY;
+				if (dx*dx + dy*dy <= radius*radius) {
+					pixels[y * WIDTH + x] = SDL_MapRGBA(shapeSurface->format, 0, 0, 0, 255);
+					}
+				else {
+					pixels[y * WIDTH + x] = SDL_MapRGBA(shapeSurface->format, 0, 0, 0, 0);
+					}
+				}
+			}
+		}
+
+
+	SDL_UnlockSurface(shapeSurface);
+
+	// Apply the shape
+	SDL_WindowShapeMode shapeMode;
+	shapeMode.mode = ShapeModeDefault;
+	if (SDL_SetWindowShape(w, shapeSurface, &shapeMode) != 0) {
+		SDL_Log("Shape error: %s", SDL_GetError());
+		}
+	SDL_FreeSurface(shapeSurface);
+
+	r = SDL_CreateRenderer(w, -1, SDL_RENDERER_ACCELERATED);
+	SDL_RaiseWindow(w);
+	}
+
+
+void destroy_window() {
+	SDL_DestroyRenderer(r);
+	SDL_DestroyWindow(w);
+	SDL_Quit();
+	r = NULL;
+	w = NULL;
+	}
+
+
+void render_rgb(u32 rgb, POINT cursor, i32 startX, i32 startY, i32 w_c, i32 h_c) {
+	char msg[128];
+	snprintf(msg, 128, "R: %u, G: %u B: %u", GetRValue(rgb), GetGValue(rgb), GetBValue(rgb));
+	SDL_Color color = {225, 225, 225, 0};
+	Text_Renderer_C(r, f, startX, startY, w_c, h_c, msg, color);
+	Sleep(3);
+	SDL_SetWindowPosition(w, cursor.x + 10, cursor.y + 10);
+	Sleep(1);
+	}
+
+void render_color_round_square(u32 rgb){
+	SDL_SetRenderDrawColor(r, GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), 255);
+	draw_rounded_rect(r, 10, 10, 40, 40, 5);	
+}
 
 
 int main(int argc, char *argv[]) {
@@ -139,9 +297,8 @@ int main(int argc, char *argv[]) {
 //INIT SDL2
 	SDL_ERR(SDL_Init(SDL_INIT_VIDEO));
 	SDL_ERR(TTF_Init());
-	static SDL_Renderer *r;
-	static SDL_Window   *w;
-	TTF_Font* f = TTF_OpenFont(fontLoc, 128);
+
+	f = TTF_OpenFont(fontLoc, 128);
 	(void)P_SDL_ERR(f);
 	u32 rgb;
 
@@ -150,6 +307,8 @@ int main(int argc, char *argv[]) {
 
 	bool state = false;
 	bool isWindowCreated = false;
+
+
 
 
 
@@ -165,24 +324,16 @@ int main(int argc, char *argv[]) {
 			if(!isWindowCreated) {
 				GetCursorPos(&cursor);
 				Sleep(1);
-				w   = SDL_CreateWindow("stagod", cursor.x, cursor.y, WIDTH, HEIGHT,  SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALWAYS_ON_TOP  );
-				(void)P_SDL_ERR(w);
-				r = SDL_CreateRenderer(w, -1, SDL_RENDERER_ACCELERATED);
-				SDL_RaiseWindow(w);
+
+				init_window_round(cursor);
+
 				isWindowCreated = true;
 				Sleep(3);
+
 				}
 			}
 		else {
-			//if(w != NULL && r != NULL) 
-			{
-				SDL_DestroyRenderer(r);
-				SDL_DestroyWindow(w);
-				SDL_Quit();
-				r = NULL;
-				w = NULL;
-				}
-
+			destroy_window();
 			isWindowCreated = false;
 			}
 
@@ -192,18 +343,15 @@ int main(int argc, char *argv[]) {
 			//disp_colorref(rgb);
 			Sleep(3);
 			SDL_ERR(SDL_RenderClear(r));
-			char msg[128];
-			snprintf(msg, 128, "r: %u, g: %u b: %u", GetRValue(rgb), GetGValue(rgb), GetBValue(rgb));
-			SDL_Color color = { 255 - GetRValue(rgb), 255 -  GetGValue(rgb), 255 -  GetBValue(rgb), 0};
-			Text_Renderer_C(r, f, 10, 10, 200, 50, msg, color);
-			Sleep(3);
-			SDL_SetWindowPosition(w, cursor.x + 10, cursor.y + 10);
-			Sleep(1);
+
 			static SDL_Event event;
 			if(SDL_PollEvent(&event)) {
 				//Sleep(1);
 				}
-			SDL_SetRenderDrawColor(r, GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), 255);
+			render_rgb(rgb, cursor, 120, 40, 120, 20);
+			render_color_round_square(rgb);
+			//SDL_SetRenderDrawColor(r, GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), 255);
+			SDL_SetRenderDrawColor(r, 25, 25, 25, 255);
 			SDL_RenderPresent(r);
 			}
 
