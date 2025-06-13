@@ -21,8 +21,7 @@
 
 ## 📸 Preview
 
-*(Include a screenshot or animated GIF of the UI here)*
-
+![app](https://github.com/user-attachments/assets/0085c2f4-56c1-4674-a2b3-6fef196e5a2f)
 ---
 
 ## 🛠 Dependencies
@@ -30,7 +29,7 @@
 - [SDL2](https://libsdl.org/)
 - [SDL2_ttf](https://github.com/libsdl-org/SDL_ttf)
 - Windows API (Win32)
-- OpenMP (for multithreading)
+- OpenMP 
 
 > ⚠️ This project is designed for **Windows** only.
 
