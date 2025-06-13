@@ -32,28 +32,11 @@ This project is written in C and uses **SDL2**, **SDL2_ttf**, and a custom `tray
 * **SDL2_ttf Development Libraries**: You'll need `SDL2_ttf.dll`, `SDL2_ttf.lib`, and its `include` folder.
 * A TrueType Font (`.ttf`) file. The code specifies `"assets/fonts/LB.ttf"`. Make sure this path is correct or update `fontLoc` in the source.
 
-### Build Instructions (Inferred for MinGW)
+### Build Instructions 
+```bash
+gcc main.c -o stagod.exe -lSDL2 -lSDL2_ttf -lgdi32 -lole32 -lcomdlg32 -loleaut32 -luser32 -lShell32 -mwindows -fopenmp
 
-1.  **Place Libraries**:
-    * Create a `lib` folder in your project root and place `SDL2.lib` and `SDL2_ttf.lib` inside it.
-    * Create an `include` folder in your project root. Inside `include`, create an `SDL2` folder and copy all `.h` files from SDL2's `include` directory into it. Do the same for SDL2_ttf.
-    * Ensure the `tray.h` file is in the same directory as your main source file, or within your compiler's include path.
-2.  **Compile**:
-    Open a terminal or command prompt in your project directory and use a command similar to this (adjust paths as necessary):
-
-    ```bash
-    gcc -o ColorPicker.exe main.c -I./include -L./lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lopengl32 -lwinmm -static-libgcc -static-libstdc++ -Wl,--no-undefined -mwindows
-    ```
-    * `main.c`: Your primary source file.
-    * `-I./include`: Specifies the directory for additional include files.
-    * `-L./lib`: Specifies the directory for additional library files.
-    * `-lSDL2main -lSDL2 -lSDL2_ttf`: Links the SDL2, SDL2_ttf, and SDL2main libraries.
-    * `-lopengl32 -lwinmm -static-libgcc -static-libstdc++`: Common libraries needed for SDL2 on Windows and static linking for portability.
-    * `-mwindows`: Prevents a console window from opening.
-
-3.  **Runtime Dependencies**:
-    After compilation, ensure `SDL2.dll` and `SDL2_ttf.dll` (and your chosen font file in the `assets/fonts/` directory relative to the executable) are in the same directory as your compiled `ColorPicker.exe`.
-
+```
 ---
 
 ## Usage
@@ -69,14 +52,6 @@ This project is written in C and uses **SDL2**, **SDL2_ttf**, and a custom `tray
 
 ---
 
-## Known Issues / Limitations (Guessed)
-
-* **Windows-Specific**: The code uses `Windows.h`, `GetPixel`, `GetCursorPos`, and `GetAsyncKeyState`, making it a Windows-only application.
-* **Font Dependency**: Requires a `LB.ttf` font file in `assets/fonts/`.
-* **Limited Error Handling**: While there are `SDL_ERR` and `ERROR_BREAK` macros, extensive error handling for all possible scenarios might not be present.
-* **Hardcoded UI Layout**: The UI elements are positioned with hardcoded coordinates.
-
----
 
 ## Contributing
 
