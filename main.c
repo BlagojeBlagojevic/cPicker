@@ -31,6 +31,12 @@
 //#define fontLoc "assets/fonts/f.ttf"
 #define fontLoc "assets/fonts/LB.ttf"
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define BIGENDIAN32(_a_)    __builtin_bswap32 (_a_)
+#else
+#define BIGENDIAN32(_a_)    (_a_)
+#endif
+
 
 #undef main
 
@@ -308,46 +314,102 @@ const SDL_Color backgroundColor = (SDL_Color) {
 	};
 
 
+typedef struct {
+	double r, g, b; // h, s, v as output: r = h (deg), g = s (%), b = v (%)
+	} ColorHSV;
+
 
 //MAPING (r->h, g->s, b->v)
-SDL_Color rgb2hsv(SDL_Color in) {
-	SDL_Color         out;
-	double      min, max, delta;
+ColorHSV rgb2hsv(SDL_Color c) {
+	ColorHSV out, in;
+	in.r = c.r / 255.0f;
+	in.g = c.g / 255.0f;
+	in.b = c.b / 255.0f;
+	double min, max, delta;
 
 	min = in.r < in.g ? in.r : in.g;
-	min = min  < in.b ? min  : in.b;
+	min = min < in.b ? min : in.b;
 
 	max = in.r > in.g ? in.r : in.g;
-	max = max  > in.b ? max  : in.b;
+	max = max > in.b ? max : in.b;
 
-	out.b = max;                                // v
+	out.b = max; // value (v)
 	delta = max - min;
+
 	if (delta < 0.00001) {
-		out.g = 0;
-		out.r = 0; // undefined, maybe nan?
-		return out;
-		}
-	if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
-		out.g = (delta / max);                  // s
+		out.g = 0.0;     // saturation
+		out.r = 0.0;     // hue is undefined, set to 0
 		}
 	else {
-		// if max is 0, then r = g = b = 0
-		// s = 0, h is undefined
-		out.g = 0;
-		out.r = 0;                            // its now undefined
-		return out;
+		out.g = (max > 0.0) ? (delta / max) : 0.0; // saturation
+
+		// hue
+		if (in.r >= max)
+			out.r = (in.g - in.b) / delta;         // between yellow & magenta
+		else if (in.g >= max)
+			out.r = 2.0 + (in.b - in.r) / delta;   // between cyan & yellow
+		else
+			out.r = 4.0 + (in.r - in.g) / delta;   // between magenta & cyan
+
+		out.r *= 60.0;                             // convert to degrees
+		if (out.r < 0.0)
+			out.r += 360.0;
 		}
-	if( in.r >= max )                           // > is bogus, just keeps compilor happy
-		out.r = ( in.g - in.b ) / delta;        // between yellow & magenta
-	else if( in.g >= max )
-		out.r = 2.0 + ( in.b - in.r ) / delta;  // between cyan & yellow
-	else
-		out.r = 4.0 + ( in.r - in.g ) / delta;  // between magenta & cyan
 
-	out.r *= 60.0;                              // degrees
+	// Convert to percentages and round
+	out.r = (int)(out.r + 0.5) % 360;            // hue in degrees
+	out.g = (int)(out.g * 100.0 + 0.5);          // sat %
+	out.b = (int)(out.b * 100.0 + 0.5);          // val %
 
-	if( out.r < 0.0 )
-		out.r += 360.0;
+	return out;
+	}
+
+ColorHSV rgb2hsl(SDL_Color c) {
+	ColorHSV out, in;
+	in.r = c.r / 255.0f;
+	in.g = c.g / 255.0f;
+	in.b = c.b / 255.0f;
+	double min, max, delta;
+
+	min = in.r < in.g ? in.r : in.g;
+	min = min < in.b ? min : in.b;
+
+	max = in.r > in.g ? in.r : in.g;
+	max = max > in.b ? max : in.b;
+
+	out.b = (max + min) / 2.0; // Lightness (L)
+
+	delta = max - min;
+
+	if (delta < 0.00001) {
+		// Achromatic (gray)
+		out.r = 0.0; // Hue
+		out.g = 0.0; // Saturation
+		}
+	else {
+		// Saturation
+		if (out.b <= 0.5)
+			out.g = delta / (max + min);
+		else
+			out.g = delta / (2.0 - max - min);
+
+		// Hue
+		if (in.r >= max)
+			out.r = (in.g - in.b) / delta;
+		else if (in.g >= max)
+			out.r = 2.0 + (in.b - in.r) / delta;
+		else
+			out.r = 4.0 + (in.r - in.g) / delta;
+
+		out.r *= 60.0;
+		if (out.r < 0.0)
+			out.r += 360.0;
+		}
+
+	// Convert to degrees and percentages
+	out.r = (int)(out.r + 0.5) % 360;       // Hue in degrees
+	out.g = (int)(out.g * 100.0 + 0.5);     // Saturation in percent
+	out.b = (int)(out.b * 100.0 + 0.5);     // Lightness in percent
 
 	return out;
 	}
@@ -709,9 +771,9 @@ void render_rgb(SDL_Renderer *r1, u32 rgb, i32 startX, i32 startY, i32 w_c, i32 
 
 	}
 
-void render_hsv(SDL_Color c, i32 startX, i32 startY, i32 w_c, i32 h_c) {
+void render_hsv(ColorHSV c, i32 startX, i32 startY, i32 w_c, i32 h_c) {
 	char msg[128];
-	snprintf(msg, 128, "  %3u %3u %3u", c.r, c.g, c.b);
+	snprintf(msg, 128, "  %3d %3u %3u", (i16)c.r, (u8)c.g, (u8)c.b);
 	SDL_Color color = {225, 225, 225, 0};
 	Text_Renderer_C(r, f, startX, startY, w_c, h_c, msg, color);
 	Sleep(3);
@@ -725,6 +787,12 @@ void render_color_round_square(SDL_Renderer *r1, u32 rgb, i32 startX, i32 startY
 	draw_rounded_rect(r1, startX, startY, wi, hi, ra);
 	}
 
+u32 ColourToUint(i32 R, i32 G, i32 B) {
+	return (u32)((B << 16) + (G << 8) + (R << 0));
+	}
+
+
+
 void render_rgb_hex(SDL_Renderer* re, u32 rgb, i32 startX, i32 startY, i32 w_c, i32 h_c) {
 	char msg[128];
 	memset(msg, '\0', 128);
@@ -732,7 +800,11 @@ void render_rgb_hex(SDL_Renderer* re, u32 rgb, i32 startX, i32 startY, i32 w_c, 
 		snprintf(msg, 128, "  #000000");
 		}
 	else {
-		snprintf(msg, 128, "  #%x", rgb);
+		SDL_Color temp = (SDL_Color) {
+			GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), 0
+			};
+		//rgb = ColourToUint(temp.r, temp.g, temp.b);
+		snprintf(msg, 128, "  #%.2x%.2x%.2x", temp.r, temp.g, temp.b);
 		}
 
 	//SDL_Color color = {225, 225, 225, 0};
@@ -782,16 +854,17 @@ void render_elements(Element_DA *elements) {
 								break;
 								}
 						case Details_HSL: {
-
 								SDL_Color c = {GetRValue(program_state.rgb), GetGValue(program_state.rgb), GetBValue(program_state.rgb), 0 };
-								c = rgb2hsv(c);
-								render_hsv(c, e.x - 15, (e.y + e.height - 30), e.width, 15);
+								ColorHSV  cHSV = rgb2hsl(c);
+								render_hsv(cHSV, e.x - 15, (e.y + e.height - 30), e.width, 15);
+								break;
 								break;
 								}
 						case Details_HSV: {
+
 								SDL_Color c = {GetRValue(program_state.rgb), GetGValue(program_state.rgb), GetBValue(program_state.rgb), 0 };
-								c = rgb2hsv(c);
-								render_hsv(c, e.x - 15, (e.y + e.height - 30), e.width, 15);
+								ColorHSV  cHSV = rgb2hsv(c);
+								render_hsv(cHSV, e.x - 15, (e.y + e.height - 30), e.width, 15);
 								break;
 								}
 
@@ -861,9 +934,6 @@ void IsMouseKey() {
 	}
 
 
-u32 ColourToUint(i32 R, i32 G, i32 B) {
-	return (u32)((R << 16) + (G << 8) + (B << 0));
-	}
 
 static inline bool isHower(i32 x, i32 y, i32 width, i32 height) {
 	return (bool)((y <= program_state.cursor.y && (y + height) >= program_state.cursor.y) &&
@@ -924,7 +994,7 @@ void color_element3_callback(i32 x, i32 y, i32 width, i32 height, SDL_Color c) {
 	if(state == true) {
 		LOG("ON ELEMENT color3\n");
 		program_state.whatColorIsSelected  = 3;
-		program_state.rgb = ColourToUint(c.r, c.g, c.b);
+		program_state.rgb =  ColourToUint(c.r, c.g, c.b);
 
 		}
 	//DROP(whatElement);
@@ -961,7 +1031,11 @@ void hex_element_callback(i32 x, i32 y, i32 width, i32 height, SDL_Color c) {
 			snprintf(text, 128, "  #000000");
 			}
 		else {
-			snprintf(text, 128, "  #%x", program_state.rgb);
+			SDL_Color temp = (SDL_Color) {
+				GetRValue(program_state.rgb), GetGValue(program_state.rgb), GetBValue(program_state.rgb), 0
+				};
+			snprintf(text, 128, "  #%.2x%.2x%.2x", temp.r, temp.g, temp.b);
+
 			}
 		CopyAnsiTextToClipboard(text);
 		}
@@ -1210,8 +1284,8 @@ int main(int argc, char *argv[]) {
 	const char* dataEChar[] = {
 		"HEX",
 		"RGB",
+		"HSV",
 		"HSL",
-		"HSB",
 		};
 	//THEY ARE RENDERD RELATIVLY TO TEXXT Element_Details
 	dataElements[0] = create_element(Element_Details, details.text.startX,
@@ -1288,7 +1362,7 @@ int main(int argc, char *argv[]) {
 						#pragma omp critical
 							{
 							if(program_state.isButtonPressed == true) {
-								program_state.rgb = get_pixel_color(&program_state.cursor);
+								program_state.rgb = (get_pixel_color(&program_state.cursor));
 								//disp_colorref(program_state.rgb);
 								u8 sC = program_state.whatColorIsSelected;
 								//LOG("%d", sC);
