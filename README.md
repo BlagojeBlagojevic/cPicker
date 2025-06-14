@@ -61,8 +61,7 @@ No specific contributing guidelines are provided, but feel free to fork the repo
 
 ## License
 
-(Please specify your desired license here, e.g., MIT, GPL, etc. If not specified, the code is under implied copyright.)
-
+MIT
 ---
 
 ## Preview
