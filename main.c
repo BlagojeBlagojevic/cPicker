@@ -29,7 +29,7 @@
 #include<SDL2/SDL_ttf.h>
 //static const char* fontLoc = "assets/fonts/f.ttf";
 //#define fontLoc "assets/fonts/f.ttf"
-#define fontLoc "assets/fonts/LB.ttf"
+#define fontLoc "assets/fonts/OPEN_LB.ttf"
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define BIGENDIAN32(_a_)    __builtin_bswap32 (_a_)
@@ -58,27 +58,13 @@
 #define DROP(var) {(void)var;}
 
 
-//TRY.h include stufs
-#if defined (_WIN32) || defined (_WIN64)
+
 #define TRAY_WINAPI 1
-#elif defined (__linux__) || defined (linux) || defined (__linux)
-#define TRAY_APPINDICATOR 1
-#elif defined (__APPLE__) || defined (__MACH__)
-#define TRAY_APPKIT 1
-#endif
+
 
 #include "tray.h"
 
-#if TRAY_APPINDICATOR
-#define TRAY_ICON1 "indicator-messages"
-#define TRAY_ICON2 "indicator-messages-new"
-#elif TRAY_APPKIT
-#define TRAY_ICON1 "icon.png"
-#define TRAY_ICON2 "icon.png"
-#elif TRAY_WINAPI
 #define TRAY_ICON1 "icon.ico"
-#define TRAY_ICON2 "icon.ico"
-#endif
 
 
 //END TRY
@@ -460,7 +446,7 @@ bool IsKeyPressedFollow() {
 
 
 	bool currentAState = ((GetAsyncKeyState('A') & 0x8000) != 0) & ((GetAsyncKeyState(' ') & 0x8000) != 0);
-	Sleep(1);
+	//Sleep(1);
 
 	if (currentAState && !prevAState) {
 		prevAState = currentAState;
@@ -809,7 +795,7 @@ void render_rgb_hex(SDL_Renderer* re, u32 rgb, i32 startX, i32 startY, i32 w_c, 
 
 	//SDL_Color color = {225, 225, 225, 0};
 	Text_Renderer_C(re, f, startX, startY, w_c, h_c, msg, WHITE);
-	Sleep(3);
+	//Sleep(3);
 	//SDL_SetWindowPosition(w, cursor.x + 10, cursor.y + 10);
 	}
 
@@ -1142,7 +1128,7 @@ static void quit_cb(struct tray_menu *item) {
 
 
 static void bring_cpicker(struct tray_menu *item) {
-	//DROP(item);
+	DROP(item);
 	#pragma omp critical
 		{
 
@@ -1157,8 +1143,10 @@ static void bring_cpicker(struct tray_menu *item) {
 		}
 	}
 
+
+
 static struct tray tray = {
-	.icon = TRAY_ICON1,
+	.icon = "icon.ico",
 	.menu =
 	(struct tray_menu[]) {
 			{"CPICK", 0, 0, bring_cpicker, NULL, NULL},
@@ -1370,8 +1358,9 @@ int main(int argc, char *argv[]) {
 									GetRValue(program_state.rgb), GetGValue(program_state.rgb), GetBValue(program_state.rgb), 0
 									};
 								//IF CLICKED SAVE COLOR
-								//TBD COPY_TO_CLIPBOARD
+								//COPY_TO_CLIPBOARD 
 								//CREATE FOLOWING WINDOW
+								//TBD NOT CLICK ELEMENT
 								following_window();
 
 
