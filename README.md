@@ -46,8 +46,7 @@ gcc main.c -o stagod.exe -lSDL2 -lSDL2_ttf -lgdi32 -lole32 -lcomdlg32 -loleaut32
 3.  **Pick a Color**:
     * Click the "Select Color" button in the main window.
     * Move your mouse cursor over the desired color on your screen.
-    * Press `A + Space` (as inferred from `IsKeyPressedFollow`) to activate the small follow-up window and `S + Space` (as inferred from `IsKeyPressedExtendedWindow`) to capture the color and display it in the main window.
-    * (Alternatively, a single click with the left mouse button might also pick the color if `program_state.isMouseClicked` is handled on an element click after activating selection).
+    * Single click will pick a color.
 4.  **Copy Color Values**: Click on the displayed HEX or RGB values to copy them to your clipboard.
 
 ---
