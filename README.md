@@ -17,7 +17,7 @@ A lightweight and always-on-top color picking utility for Windows, built with SD
 * **Clipboard Integration**: Copy the color values directly to your clipboard for quick use in other applications.
 * **Always-on-Top Window**: The main application window and a small follow-up window (for precise picking) stay visible above other applications.
 * **System Tray Icon**: Minimize the application to the system tray for unobtrusive background operation and quick access.
-* **Color History**: (Inferred from `Date_Color_DA` and `create_date_color`) Likely stores a history of picked colors along with the time they were picked.
+
 
 ---
 
