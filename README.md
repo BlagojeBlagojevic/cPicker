@@ -41,7 +41,7 @@ gcc main.c -o stagod.exe -lSDL2 -lSDL2_ttf -lgdi32 -lole32 -lcomdlg32 -loleaut32
 
 ## Usage
 
-1.  **Run the Application**: Execute `ColorPicker.exe`. It will likely appear in your system tray by default.
+1.  **Run the Application**: Execute `stagod.exe`. It will likely appear in your system tray by default.
 2.  **Access Main Window**: Click on the system tray icon and select "CPICK" to bring up the main application window.
 3.  **Pick a Color**:
     * Click the "Select Color" button in the main window.
